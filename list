@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta property="og:title" content="加盟店一覧">
+    <meta property="og:description" content="お得な加盟店を検索できるアプリです。">
+    <meta property="og:type" content="website">
+
+    <title>加盟店一覧</title>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#ff6b6b',   /* Mapアプリに合わせた赤系 */
+                        secondary: '#fbbf24', /* 黄色 */
+                        bgBase: '#fffaf9',    /* Mapアプリに合わせた背景色 */
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { 
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; 
+            background-color: #fffaf9;
+            color: #5d4037; /* Mapアプリに合わせた文字色 */
+            -webkit-font-smoothing: antialiased;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .coupon-ticket {
+            background: #ffffff;
+            position: relative;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+            clip-path: polygon(
+                0% 0%, 100% 0%, 100% 100%, 
+                95% 95%, 90% 100%, 85% 95%, 80% 100%, 75% 95%, 70% 100%, 65% 95%, 60% 100%, 55% 95%, 50% 100%, 
+                45% 95%, 40% 100%, 35% 95%, 30% 100%, 25% 95%, 20% 100%, 15% 95%, 10% 100%, 5% 95%, 
+                0% 100%
+            );
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="bgBase">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // ★★★ ここにMapアプリと同じGASのURLを入れてください ★★★
+        const API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec"; 
+        
+        // Googleドライブ画像のURL変換関数（Mapアプリと同じロジック）
+        const formatImageUrl = (url) => {
+            if(!url) return null;
+            let clean = url.trim();
+            const idMatch = clean.match(/\/d\/(.+?)\/|id=(.+?)(&|$)/);
+            if(clean.includes("drive.google") && idMatch) {
+                const id = idMatch[1] || idMatch[2];
+                return `https://lh3.googleusercontent.com/d/${id}`;
+            }
+            return clean;
+        };
+
+        // アイコンコンポーネント
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = {
+                search: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+                mapPin: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+                heart: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>,
+                heartFill: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="#ff6b6b" stroke="#ff6b6b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>,
+                arrowLeft: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+                externalLink: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>,
+                home: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+                chevronRight: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"></polyline></svg>,
+                x: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            };
+            return icons[name] || null;
+        };
+
+        // カルーセルコンポーネント
+        const ImageCarousel = ({ images, shopName }) => {
+            const [currentIndex, setCurrentIndex] = useState(0);
+            
+            const handleScroll = (e) => {
+                const scrollLeft = e.target.scrollLeft;
+                const width = e.target.offsetWidth;
+                const index = Math.round(scrollLeft / width);
+                setCurrentIndex(index);
+            };
+
+            if (!images || images.length === 0) {
+                return (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                        No Image
+                    </div>
+                );
+            }
+
+            return (
+                <div className="relative w-full h-full group">
+                    <div 
+                        className="flex overflow-x-auto snap-x snap-mandatory h-full w-full hide-scrollbar" 
+                        onScroll={handleScroll}
+                    >
+                        {images.map((src, i) => (
+                            <img 
+                                key={i} 
+                                src={src} 
+                                alt={`${shopName} ${i+1}`} 
+                                className="w-full h-full object-cover flex-shrink-0 snap-center" 
+                            />
+                        ))}
+                    </div>
+                    
+                    {images.length > 1 && (
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10 pointer-events-none">
+                            {images.map((_, i) => (
+                                <div 
+                                    key={i} 
+                                    className={`w-2 h-2 rounded-full shadow-sm transition-all duration-300 ${
+                                        i === currentIndex 
+                                        ? 'bg-primary scale-125' 
+                                        : 'bg-white/70'
+                                    }`} 
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [shops, setShops] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [view, setView] = useState('list');
+            const [selectedShop, setSelectedShop] = useState(null);
+            
+            // 検索状態
+            const [searchTerm, setSearchTerm] = useState("");
+            const [selectedCategory, setSelectedCategory] = useState("すべて");
+            const [isSearchOpen, setIsSearchOpen] = useState(false); // 検索バーの開閉状態
+            
+            const [favorites, setFavorites] = useState([]);
+
+            const categories = useMemo(() => {
+                const cats = new Set(shops.map(s => s.category).filter(Boolean));
+                // 「その他」があれば最後に持ってくるロジックはMap同様お好みで
+                return ["すべて", ...Array.from(cats)];
+            }, [shops]);
+
+            useEffect(() => {
+                const loadData = async () => {
+                    setLoading(true);
+                    const savedFavs = JSON.parse(localStorage.getItem('myAppFavorites') || '[]');
+                    setFavorites(savedFavs);
+
+                    if (API_URL) {
+                        try {
+                            const res = await fetch(API_URL);
+                            const data = await res.json();
+                            
+                            // ★Mapアプリのデータ構造(キー名)を、このアプリ用に変換して取り込む
+                            const formattedData = data.map(item => {
+                                // 画像の整形
+                                const imgStr = item.image || "";
+                                const imgArray = imgStr.split(',').filter(s => s.trim()).map(formatImageUrl);
+                                
+                                // クーポン画像の整形
+                                const couponStr = item.coupon_imgs || "";
+                                const couponArray = couponStr.split(',').filter(s => s.trim()).map(formatImageUrl);
+                                const couponUrlArray = (item.coupon_urls || "").split(',');
+
+                                return {
+                                    id: item.id,
+                                    name: item.name,
+                                    category: item.category,
+                                    address: item.address,
+                                    hours: item.hours,
+                                    holiday: item.closed, // Mapアプリのclosedをholidayとして利用
+                                    phone: item.tel,      // Mapアプリのtelをphoneとして利用
+                                    website: item.url,    // Mapアプリのurlをwebsiteとして利用
+                                    sns: item.sns,
+                                    note: item.description, // Mapアプリのdescriptionをnoteとして利用
+                                    images: imgArray,       // 画像配列
+                                    couponImages: couponArray, // クーポン画像配列
+                                    couponUrls: couponUrlArray,
+                                    lat: item.lat,
+                                    lng: item.lng
+                                };
+                            });
+
+                            setShops(formattedData);
+                            setLoading(false);
+
+                        } catch (err) {
+                            console.error("Data load error:", err);
+                            // エラー時は空データなどをセット
+                            setShops([]);
+                            setLoading(false);
+                        }
+                    } else {
+                        // URL未設定時はデモモードにはせずローディング終了
+                        setLoading(false);
+                    }
+                };
+                loadData();
+            }, []);
+
+            const toggleFavorite = (shopId) => {
+                let newFavs;
+                if (favorites.includes(shopId)) {
+                    newFavs = favorites.filter(id => id !== shopId);
+                } else {
+                    newFavs = [...favorites, shopId];
+                }
+                setFavorites(newFavs);
+                localStorage.setItem('myAppFavorites', JSON.stringify(newFavs));
+            };
+
+            const filteredShops = useMemo(() => {
+                let data = shops;
+                if (view === 'favorites') {
+                    data = data.filter(s => favorites.includes(s.id));
+                }
+                if (selectedCategory !== "すべて") {
+                    data = data.filter(s => s.category === selectedCategory);
+                }
+                if (searchTerm) {
+                    const lowerTerm = searchTerm.toLowerCase();
+                    data = data.filter(s => 
+                        (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
+                        (s.address && s.address.toLowerCase().includes(lowerTerm)) ||
+                        (s.note && s.note.toLowerCase().includes(lowerTerm))
+                    );
+                }
+                return data;
+            }, [shops, view, selectedCategory, searchTerm, favorites]);
+
+            const handleShopClick = (shop) => {
+                setSelectedShop(shop);
+                setView('detail');
+                window.scrollTo(0, 0);
+            };
+
+            const goHome = () => {
+                setSelectedShop(null);
+                setView('list');
+                setSearchTerm("");
+                setSelectedCategory("すべて");
+                setIsSearchOpen(false);
+            };
+
+            const goFavorites = () => {
+                setSelectedShop(null);
+                setView('favorites');
+                window.scrollTo(0, 0);
+                setIsSearchOpen(false);
+            };
+
+            // --- コンポーネント: 店舗カード ---
+            const ShopCard = ({ shop }) => {
+                const firstImage = (shop.images && shop.images.length > 0) ? shop.images[0] : null;
+
+                return (
+                    <div 
+                        onClick={() => handleShopClick(shop)} 
+                        className="bg-white rounded-xl shadow-sm overflow-hidden border border-red-50 cursor-pointer transform transition duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col h-full"
+                    >
+                        <div className="h-32 w-full bg-slate-100 relative">
+                            {firstImage ? (
+                                <img src={firstImage} alt={shop.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">No Image</div>
+                            )}
+                            <div className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-sm">
+                                <Icon name={favorites.includes(shop.id) ? "heartFill" : "heart"} size={16} className={favorites.includes(shop.id) ? "text-primary" : "text-slate-400"} />
+                            </div>
+                            <div className="absolute bottom-2 left-2 bg-primary/90 text-white text-[10px] px-2 py-1 rounded-full font-bold">
+                                {shop.category}
+                            </div>
+                        </div>
+                        <div className="p-3 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 className="font-bold text-slate-700 text-sm mb-1 leading-snug">{shop.name}</h3>
+                                <div className="flex items-center text-slate-400 text-xs mb-2">
+                                    <Icon name="mapPin" size={10} className="mr-1 flex-shrink-0" />
+                                    <span className="truncate">{shop.address}</span>
+                                </div>
+                            </div>
+                            <div className="mt-2 text-right">
+                                <button className="text-xs text-primary border border-primary bg-red-50 px-3 py-1.5 rounded-full font-bold shadow-sm inline-flex items-center hover:bg-primary hover:text-white transition-colors">
+                                    詳細 <Icon name="chevronRight" size={12} className="ml-1" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- コンポーネント: 店舗詳細 ---
+            const ShopDetailView = ({ shop }) => {
+                if (!shop) return null;
+                const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${shop.lat || ""},${shop.lng || ""}`;
+                
+                return (
+                    <div className="pb-24 animate-fade-in relative bg-white min-h-screen">
+                        
+                        {/* 戻るボタン（固定） */}
+                        <button 
+                            onClick={() => setView(view === 'favorites' ? 'favorites' : 'list')}
+                            className="fixed top-4 left-4 z-50 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg text-slate-600 hover:text-primary transition border border-slate-100"
+                        >
+                            <Icon name="arrowLeft" />
+                        </button>
+
+                        <div className="relative h-72 w-full">
+                            <ImageCarousel images={shop.images} shopName={shop.name} />
+                            
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none"></div>
+
+                            <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
+                                <span className="text-xs bg-primary text-white font-bold px-2 py-1 rounded mb-2 inline-block shadow-sm">
+                                    {shop.category}
+                                </span>
+                                <h1 className="text-2xl font-bold leading-tight mb-1">{shop.name}</h1>
+                                <div className="flex items-center text-sm text-slate-200">
+                                    <Icon name="mapPin" size={14} className="mr-1" />
+                                    {shop.address}
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(shop.id); }} 
+                                className="absolute bottom-5 right-5 p-3 rounded-full bg-white shadow-lg transform transition active:scale-90 z-20"
+                            >
+                                <Icon name={favorites.includes(shop.id) ? "heartFill" : "heart"} size={24} className={favorites.includes(shop.id) ? "text-primary" : "text-slate-400"} />
+                            </button>
+                        </div>
+
+                        <div className="px-4 py-6 space-y-6">
+                            
+                            <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+                                <h2 className="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                                    <span className="w-1.5 h-6 bg-primary rounded-full mr-2"></span>
+                                    店舗情報
+                                </h2>
+                                <div className="space-y-3 text-sm text-slate-600">
+                                    <div className="flex border-b border-slate-50 pb-2">
+                                        <span className="w-24 text-slate-400 font-medium flex-shrink-0">営業時間</span>
+                                        <span className="">{shop.hours}</span>
+                                    </div>
+                                    <div className="flex border-b border-slate-50 pb-2">
+                                        <span className="w-24 text-slate-400 font-medium flex-shrink-0">定休日</span>
+                                        <span className="">{shop.holiday}</span>
+                                    </div>
+                                    <div className="flex border-b border-slate-50 pb-2">
+                                        <span className="w-24 text-slate-400 font-medium flex-shrink-0">電話番号</span>
+                                        <a href={`tel:${shop.phone}`} className="text-primary font-medium">{shop.phone}</a>
+                                    </div>
+                                    {shop.website && (
+                                        <div className="flex border-b border-slate-50 pb-2">
+                                            <span className="w-24 text-slate-400 font-medium flex-shrink-0">公式サイト</span>
+                                            <a href={shop.website} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center">
+                                                Webサイトへ <Icon name="externalLink" size={12} className="ml-1" />
+                                            </a>
+                                        </div>
+                                    )}
+                                    {shop.sns && (
+                                        <div className="flex border-b border-slate-50 pb-2">
+                                            <span className="w-24 text-slate-400 font-medium flex-shrink-0">SNS</span>
+                                            <a href={shop.sns} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center">
+                                                SNSを見る <Icon name="externalLink" size={12} className="ml-1" />
+                                            </a>
+                                        </div>
+                                    )}
+                                    {shop.note && (
+                                        <div className="flex pt-1">
+                                            <span className="w-24 text-slate-400 font-medium flex-shrink-0">備考</span>
+                                            <span className="leading-relaxed">{shop.note}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* クーポン表示エリア */}
+                            {shop.couponImages && shop.couponImages.length > 0 ? (
+                                <div className="space-y-4">
+                                    {shop.couponImages.map((img, idx) => {
+                                        const url = shop.couponUrls[idx];
+                                        return (
+                                            <div key={idx} className="coupon-ticket text-center p-6 rounded-xl shadow-sm border border-red-100 bg-gradient-to-br from-white to-red-50">
+                                                <h3 className="text-lg font-bold text-primary mb-3 flex items-center justify-center">
+                                                    <span className="text-2xl mr-2">🎁</span> 特別クーポン {shop.couponImages.length > 1 ? `(${idx+1})` : ""}
+                                                </h3>
+                                                <div className="rounded-lg overflow-hidden border border-slate-200 mb-4 bg-white">
+                                                    <img src={img} alt="Coupon" className="w-full h-auto" />
+                                                </div>
+                                                {url ? (
+                                                    <a href={url} target="_blank" className="block w-full bg-primary hover:bg-red-500 text-white font-bold py-4 rounded-full shadow-lg transform transition active:scale-95 text-lg">
+                                                        このクーポンを使う
+                                                    </a>
+                                                ) : (
+                                                    <button 
+                                                        disabled
+                                                        className="w-full bg-gray-300 text-white font-bold py-4 rounded-full cursor-not-allowed"
+                                                    >
+                                                        クーポン詳細なし
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : null}
+
+                        </div>
+
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-100 z-50 safe-area-bottom">
+                            <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="block w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg text-center flex items-center justify-center hover:bg-red-600 transition">
+                                <Icon name="mapPin" className="mr-2" />
+                                ここへ行く（ルート案内）
+                            </a>
+                        </div>
+                    </div>
+                );
+            };
+
+            // メインレンダリング
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-screen bg-bgBase">
+                        <div className="animate-spin text-primary">
+                             <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'detail') {
+                return <ShopDetailView shop={selectedShop} />;
+            }
+
+            return (
+                <div className="pb-24 max-w-md mx-auto min-h-screen relative bg-bgBase">
+                    {/* ヘッダー */}
+                    <div className="sticky top-0 z-30 bg-primary shadow-md px-5 py-3 text-white rounded-b-3xl mb-4 transition-all duration-300">
+                        <div className="flex justify-between items-center py-1">
+                            <div>
+                                <h1 className="text-xl font-bold tracking-wide flex items-center">
+                                    {view === 'favorites' ? 'お気に入り' : '加盟店一覧'}
+                                    {view !== 'favorites' && (
+                                        <span className="ml-3 text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">
+                                            {filteredShops.length}件
+                                        </span>
+                                    )}
+                                </h1>
+                            </div>
+                            {/* 検索トグルボタン (お気に入り画面以外で表示) */}
+                            {view !== 'favorites' && (
+                                <button 
+                                    onClick={() => setIsSearchOpen(!isSearchOpen)}
+                                    className={`p-2 rounded-full transition-colors duration-200 ${isSearchOpen ? 'bg-white text-primary' : 'hover:bg-white/20 text-white'}`}
+                                >
+                                    <Icon name={isSearchOpen ? "x" : "search"} size={22} />
+                                </button>
+                            )}
+                        </div>
+                        
+                        {/* 検索エリア (トグル式) */}
+                        {view !== 'favorites' && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'max-h-40 opacity-100 mt-3 pb-2' : 'max-h-0 opacity-0'}`}>
+                                <div className="space-y-3">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="店名・住所・キーワードで検索..."
+                                            className="w-full bg-white text-slate-700 border-none rounded-full py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-secondary/50 shadow-inner placeholder-slate-400"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                        <div className="absolute left-3.5 top-2.5 text-slate-400">
+                                            <Icon name="search" size={18} />
+                                        </div>
+                                    </div>
+                                    <div className="flex space-x-2 overflow-x-auto hide-scrollbar pb-1">
+                                        {categories.map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => setSelectedCategory(cat)}
+                                                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all transform active:scale-95 ${
+                                                    selectedCategory === cat 
+                                                    ? 'bg-secondary text-white shadow-md' 
+                                                    : 'bg-white/20 text-white border border-white/30 hover:bg-white/30'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* コンテンツリスト */}
+                    <div className="px-4 grid grid-cols-2 gap-4">
+                        {filteredShops.length > 0 ? (
+                            filteredShops.map(shop => (
+                                <ShopCard key={shop.id} shop={shop} />
+                            ))
+                        ) : (
+                            <div className="col-span-2 text-center py-20 text-slate-400">
+                                <div className="mb-4 flex justify-center">
+                                    <img src="https://specified-plum-9oe3zlcs1h.edgeone.app/いーなキャラ双眼鏡.jpg" alt="いーなキャラ" className="w-32 h-auto opacity-90 mx-auto" />
+                                </div>
+                                <p className="text-lg font-bold text-primary">いーなと思ったお店を見つけよー！</p>
+                                {view !== 'favorites' && (
+                                    <button onClick={() => {setSearchTerm(""); setSelectedCategory("すべて");}} className="mt-4 text-primary text-sm underline">
+                                        検索条件をクリア
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ボトムナビゲーション */}
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur rounded-full shadow-xl border border-slate-100 flex px-8 py-2.5 z-40 space-x-12">
+                        <button 
+                            onClick={goHome} 
+                            className={`flex flex-col items-center justify-center transition duration-300 ${view === 'list' ? 'text-primary scale-110' : 'text-slate-300 hover:text-slate-400'}`}
+                        >
+                            <Icon name="home" size={26} />
+                        </button>
+                        
+                        <button 
+                            onClick={goFavorites} 
+                            className={`flex flex-col items-center justify-center transition duration-300 ${view === 'favorites' ? 'text-primary scale-110' : 'text-slate-300 hover:text-slate-400'}`}
+                        >
+                            <Icon name={view === 'favorites' ? "heartFill" : "heart"} size={26} />
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
