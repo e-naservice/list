@@ -7,13 +7,15 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>加盟店一覧</title>
 
+    <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -60,7 +62,13 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         const LIFF_ID = "2008962877-6EjpZ2wZ";
-        const API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec"; 
+        
+        // ★★★ 2つのURLを使い分けます ★★★
+        // 1. 認証チェック用GAS（今回作ったもの：入り口の門番）
+        const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbwyFkNBigDdwQrmRD0Qm6FnbS7o8bqUT8jK7yrKNrx1b95TDS4CD3Sm063UIeXwp9LExg/exec";
+        
+        // 2. 加盟店データ取得用GAS（元々あったもの：データのお皿）
+        const DATA_API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec";
 
         // --- カテゴリーテーマ定義 ---
         const CATEGORY_THEMES = {
@@ -85,13 +93,15 @@
                 home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
                 chevronRight: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}><polyline points="9 18 15 12 9 6"></polyline></svg>,
                 x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                lock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             };
             return icons[name] || null;
         };
 
         const App = () => {
             const [shops, setShops] = useState([]);
-            const [loading, setLoading] = useState(true);
+            // status: 'loading' | 'allowed' | 'denied' | 'error_browser' | 'error_net'
+            const [status, setStatus] = useState("loading");
             const [view, setView] = useState('list');
             const [selectedShop, setSelectedShop] = useState(null);
             const [searchTerm, setSearchTerm] = useState("");
@@ -106,11 +116,37 @@
                 const init = async () => {
                     try {
                         await liff.init({ liffId: LIFF_ID });
+                        
+                        // 1. ブラウザチェック: LINEアプリ外ならNG
+                        if (!liff.isInClient()) {
+                            setStatus("error_browser");
+                            return;
+                        }
+
+                        // 2. ログインチェック: 未ログインなら強制ログイン
+                        if (!liff.isLoggedIn()) {
+                            liff.login();
+                            return;
+                        }
+
+                        // 3. ★認証チェック: 認証用GASに問い合わせる
+                        const profile = await liff.getProfile();
+                        const authRes = await fetch(`${AUTH_API_URL}?uid=${profile.userId}`);
+                        const authResult = await authRes.json();
+
+                        if (!authResult.allowed) {
+                            // 許可リストにない、または退職済み
+                            setStatus("denied");
+                            return;
+                        }
+
+                        // 4. ★データ取得: 認証OKの場合のみ、加盟店データ用GASからデータを取る
                         const saved = JSON.parse(localStorage.getItem('myAppFavorites') || '[]');
                         setFavorites(saved);
 
-                        const res = await fetch(API_URL);
-                        const data = await res.json();
+                        const dataRes = await fetch(DATA_API_URL);
+                        const data = await dataRes.json();
+                        
                         setShops(data.map(item => ({
                             id: item.id,
                             name: item.name,
@@ -128,10 +164,13 @@
                             lat: item.lat,
                             lng: item.lng
                         })));
+
+                        // 全て完了したら表示許可
+                        setStatus("allowed");
+
                     } catch (e) {
                         console.error(e);
-                    } finally {
-                        setLoading(false);
+                        setStatus("error_net");
                     }
                 };
                 init();
@@ -153,12 +192,44 @@
                 return d;
             }, [shops, view, selectedCategory, searchTerm, favorites]);
 
-            if (loading) return (
+
+            // --- 画面の出し分け (セキュリティ & エラー) ---
+
+            if (status === "loading") return (
                 <div className="flex flex-col items-center justify-center h-screen bg-bgBase">
                     <div className="animate-spin text-primary w-10 h-10 border-4 border-current border-t-transparent rounded-full mb-4"></div>
-                    <p className="font-bold text-textMain tracking-widest">LOADING...</p>
+                    <p className="font-bold text-textMain tracking-widest">認証中...</p>
                 </div>
             );
+
+            if (status === "denied") return (
+                <div className="flex flex-col items-center justify-center h-screen bg-bgBase p-6 text-center animate-fade-in">
+                    <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-red-100 max-w-sm w-full">
+                        <div className="text-red-500 mb-4 flex justify-center"><Icon name="lock" size={48} /></div>
+                        <h2 className="text-xl font-bold text-textMain mb-4">利用できません</h2>
+                        <p className="text-textLight text-sm leading-relaxed">
+                            会員登録が完了していないか、<br/>
+                            社員情報が無効になっています。<br/><br/>
+                            所属店舗の管理者に<br/>お問い合わせください。
+                        </p>
+                    </div>
+                </div>
+            );
+
+            if (status === "error_browser") return (
+                <div className="flex items-center justify-center h-screen bg-bgBase p-4 text-center font-bold text-textMain">
+                    このページはLINEアプリからのみ利用可能です
+                </div>
+            );
+
+            if (status === "error_net") return (
+                <div className="flex items-center justify-center h-screen bg-bgBase p-4 text-center font-bold text-textMain">
+                    通信エラーが発生しました。<br/>再読み込みしてください。
+                </div>
+            );
+
+
+            // --- 以下、認証OKの場合のみ表示されるメインアプリ ---
 
             // --- Detail View Component ---
             const Detail = ({ shop }) => {
