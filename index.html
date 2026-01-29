@@ -112,7 +112,10 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- 設定エリア ---
+        // =================================================================
+        // ★★★ 設定完了済みエリア（変更不要） ★★★
+        // =================================================================
+        
         const LIFF_ID = "2008962877-6EjpZ2wZ";
         
         // 認証用GAS (sheet1)
@@ -120,7 +123,11 @@
 
         // 加盟店データ用GAS (shops)
         const DATA_API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec";
-        // ----------------
+
+        // エルメのフォームURL (認証成功時の飛び先)
+        const ELME_FORM_URL = "https://liff.line.me/2008962877-F6uzywmh?unique_key=MPpR55&ts=1769672204";
+
+        // =================================================================
 
         const formatImageUrl = (url) => {
             if(!url) return null;
@@ -220,7 +227,7 @@
             );
         };
 
-        // --- ログイン画面コンポーネント ---
+        // --- ログイン画面コンポーネント (エルメへの転送機能付き) ---
         const LoginView = ({ onLogin }) => {
             const [companyId, setCompanyId] = useState("");
             const [employeeNo, setEmployeeNo] = useState("");
@@ -245,7 +252,13 @@
                     const json = await res.json();
                     
                     if (json.success) {
-                        onLogin();
+                        // ★認証成功！ → エルメのフォームへ飛ばす
+                        if (ELME_FORM_URL && ELME_FORM_URL.startsWith("http")) {
+                            window.location.href = ELME_FORM_URL;
+                        } else {
+                            // URLがない場合のフォールバック（画面切り替え）
+                            onLogin();
+                        }
                     } else {
                         setErrorMsg(json.message || "認証に失敗しました");
                     }
@@ -284,14 +297,14 @@
                             disabled={isSubmitting || !companyId || !employeeNo}
                             className="btn-primary mt-6 shadow-md"
                         >
-                            {isSubmitting ? '確認中...' : '認証してはじめる'}
+                            {isSubmitting ? '認証中...' : '認証して次へ'}
                         </button>
                     </div>
                 </div>
             );
         };
 
-        // --- アプリ本編 ---
+        // --- アプリ本編 (加盟店一覧) ---
         const App = () => {
             const [status, setStatus] = useState("loading"); // loading, login, authorized
             const [shops, setShops] = useState([]);
@@ -334,9 +347,11 @@
                         const authJson = await authRes.json();
 
                         if (authJson.registered) {
+                            // 既に登録済み → アプリを表示
                             setStatus("authorized");
-                            fetchShops(); // データ取得へ
+                            fetchShops(); 
                         } else {
+                            // 未登録 → ログイン画面を表示
                             setStatus("login");
                         }
                     } catch (e) {
@@ -381,6 +396,7 @@
                 }
             };
 
+            // エルメへ飛ばせない場合の予備動作（基本は呼ばれない）
             const handleLoginSuccess = async () => {
                 setStatus("authorized");
                 fetchShops();
@@ -422,6 +438,17 @@
                 }
                 setTouchStart(null);
                 setTouchEnd(null);
+            };
+
+            const toggleFavorite = (shopId) => {
+                let newFavs;
+                if (favorites.includes(shopId)) {
+                    newFavs = favorites.filter(id => id !== shopId);
+                } else {
+                    newFavs = [...favorites, shopId];
+                }
+                setFavorites(newFavs);
+                localStorage.setItem('myAppFavorites', JSON.stringify(newFavs));
             };
 
             const filteredShops = useMemo(() => {
@@ -509,7 +536,7 @@
                                     <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">営業時間</span><span>{selectedShop.hours}</span></div>
                                     <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">定休日</span><span>{selectedShop.holiday}</span></div>
                                     <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">電話番号</span><a href={`tel:${selectedShop.phone}`} className="font-bold color-transition hover:underline" style={{ color: theme.dark }}>{selectedShop.phone}</a></div>
-                                    {selectedShop.website && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">公式サイト</span><a href={selectedShop.website} target="_blank" rel="noopener noreferrer" className="flex items-center color-transition hover:opacity-70" style={{ color: theme.dark }}>Webサイトへ <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
+                                    {selectedShop.website && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">公式サイト</span><a href={selectedShop.website} target="_blank" rel="noopener noreferrer" className="flex items-center color-transition hover:opacity-70" style={{ color: theme.dark }}>Webサイト <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
                                     {selectedShop.sns && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">SNS</span><a href={selectedShop.sns} target="_blank" rel="noopener noreferrer" className="flex items-center color-transition hover:opacity-70" style={{ color: theme.dark }}>SNSを見る <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
                                     {selectedShop.note && <div className="flex pt-1"><span className="w-24 text-textLight font-medium flex-shrink-0">備考</span><span className="leading-relaxed">{selectedShop.note}</span></div>}
                                 </div>
@@ -583,7 +610,7 @@
                                     {categories.map(cat => {
                                         const isActive = selectedCategory === cat;
                                         const theme = getTheme(cat);
-                                        return <button key={cat} data-category={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all transform active:scale-95 flex-shrink-0 border-2 color-transition`} style={{ backgroundColor: isActive ? theme.badgeText : 'transparent', color: isActive ? (theme.badgeText === '#fff' ? theme.main : theme.text) : theme.text, borderColor: isActive ? 'transparent' : 'rgba(255,255,255,0.6)', boxShadow: isActive ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none', transform: isActive ? 'scale(1.05)' : 'scale(1)' }}>{cat}</button>;
+                                        return <button key={cat} data-category={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all border-2 ${selectedCategory === cat ? 'scale-105 shadow-md' : ''}`} style={{ backgroundColor: selectedCategory === cat ? theme.badgeText : 'transparent', color: selectedCategory === cat ? (theme.badgeText === '#fff' ? theme.main : theme.text) : theme.text, borderColor: selectedCategory === cat ? 'transparent' : 'rgba(255,255,255,0.6)', boxShadow: isActive ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none', transform: isActive ? 'scale(1.05)' : 'scale(1)' }}>{cat}</button>;
                                     })}
                                 </div>
                             </div>
