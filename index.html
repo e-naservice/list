@@ -152,12 +152,19 @@
 
                 try {
                     const profile = await liff.getProfile();
+                    
+                    // GASへ送信 (モードはcors、ヘッダーはtext/plain)
                     const res = await fetch(AUTH_API_URL, {
                         method: 'POST',
                         mode: 'cors',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ userId: profile.userId, companyId: companyId, employeeNo: employeeNo })
                     });
+                    
+                    if (!res.ok) {
+                        throw new Error(`Server Error: ${res.status}`);
+                    }
+                    
                     const json = await res.json();
                     
                     if (json.success) {
@@ -167,8 +174,9 @@
                         setErrorMsg(json.message || "認証に失敗しました");
                     }
                 } catch (e) {
-                    console.error(e);
-                    setErrorMsg("通信エラーが発生しました");
+                    console.error("Login Error:", e);
+                    // ★ここにエラーの詳細を表示させる修正を入れました
+                    setErrorMsg("通信エラー: " + (e.message || e.toString()));
                 } finally {
                     setIsSubmitting(false);
                 }
@@ -179,12 +187,12 @@
                     <div className="bg-white p-8 rounded-3xl shadow-lg w-full max-w-sm text-center">
                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary"><Icon name="lock" size={32} /></div>
                         <h1 className="text-xl font-bold text-textMain mb-2">社員認証</h1>
-                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。<br/>会社から配布された情報を入力してください。</p>
+                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。</p>
                         <div className="space-y-4 text-left">
                             <div><label className="text-xs font-bold text-textMain ml-1">会社ID</label><input type="text" className="input-field" placeholder="例: ena" value={companyId} onChange={e => setCompanyId(e.target.value)} /></div>
                             <div><label className="text-xs font-bold text-textMain ml-1">社員番号</label><input type="text" className="input-field" placeholder="例: 001" value={employeeNo} onChange={e => setEmployeeNo(e.target.value)} /></div>
                         </div>
-                        {errorMsg && <p className="text-red-500 text-xs mt-2 font-bold">{errorMsg}</p>}
+                        {errorMsg && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4 text-xs font-bold break-all">{errorMsg}</div>}
                         <button onClick={handleSubmit} disabled={isSubmitting || !companyId || !employeeNo} className="btn-primary mt-6 shadow-md">{isSubmitting ? '認証中...' : '認証して次へ'}</button>
                     </div>
                 </div>
@@ -291,7 +299,6 @@
                         if (!liff.isLoggedIn()) { liff.login(); return; }
                         
                         const profile = await liff.getProfile();
-                        // IDチェック
                         if (!profile || !profile.userId) { alert("LINE IDが取得できません。LIFF URLから開いてください。"); return; }
 
                         // ★キャッシュ回避のためにタイムスタンプ(?t=...)を追加
