@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- キャッシュ対策 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
     <title>加盟店一覧</title>
 
     <!-- LINE SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- React & ReactDOM -->
+    <!-- React & Libraries -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -65,10 +67,10 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // =================================================================
-        // ★★★ 設定エリア（修正済み） ★★★
+        // ★★★ 設定エリア ★★★
         // =================================================================
         
-        // ★修正点：ここはURLではなく「ID文字列」だけにする必要があります
+        // LIFF ID (文字列)
         const LIFF_ID = "2008962877-wVhjZslw";
         
         // 認証用GAS (末尾 ...jE3/exec)
@@ -77,7 +79,7 @@
         // データ用GAS
         const DATA_API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec";
         
-        // エルメURL (ご提示いただいた最新のts付きURL)
+        // エルメURL
         const ELME_FORM_URL = "https://liff.line.me/2008962877-F6uzywmh?unique_key=MPpR55&ts=1769936647";
         // =================================================================
 
@@ -292,7 +294,8 @@
                         // IDチェック
                         if (!profile || !profile.userId) { alert("LINE IDが取得できません。LIFF URLから開いてください。"); return; }
 
-                        const authRes = await fetch(`${AUTH_API_URL}?userId=${profile.userId}`);
+                        // ★キャッシュ回避のためにタイムスタンプ(?t=...)を追加
+                        const authRes = await fetch(`${AUTH_API_URL}?userId=${profile.userId}&t=${new Date().getTime()}`);
                         const authJson = await authRes.json();
 
                         if (authJson.registered) {
