@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     
-    <meta property="og:title" content="加盟店一覧">
-    <meta property="og:description" content="お得な加盟店を検索できるアプリです。">
-    <meta property="og:type" content="website">
-
     <title>加盟店一覧</title>
 
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -24,24 +20,15 @@
             theme: {
                 extend: {
                     colors: {
-                        bgBase: '#fff7e4',
-                        primary: '#c5a178',
-                        textMain: '#5d4037',
-                        textLight: '#8d7b75',
+                        bgBase: '#fff7e4', primary: '#c5a178', textMain: '#5d4037', textLight: '#8d7b75',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
                         'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     },
                     keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        popIn: {
-                            '0%': { opacity: '0', transform: 'scale(0.98)' },
-                            '100%': { opacity: '1', transform: 'scale(1)' },
-                        }
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        popIn: { '0%': { opacity: '0', transform: 'scale(0.98)' }, '100%': { opacity: '1', transform: 'scale(1)' } }
                     }
                 }
             }
@@ -50,38 +37,24 @@
     
     <style>
         body { 
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; 
-            background-color: #fff7e4;
-            color: #5d4037;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            background-color: #fff7e4; 
+            color: #5d4037; 
+            -webkit-tap-highlight-color: transparent; 
             overscroll-behavior-y: none;
-            /* タップ時のハイライト色を無効化 */
-            -webkit-tap-highlight-color: transparent;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .coupon-ticket {
-            background: #ffffff;
-            position: relative;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 95% 95%, 90% 100%, 85% 95%, 80% 100%, 75% 95%, 70% 100%, 65% 95%, 60% 100%, 55% 95%, 50% 100%, 45% 95%, 40% 100%, 35% 95%, 30% 100%, 25% 95%, 20% 100%, 15% 95%, 10% 100%, 5% 95%, 0% 100%);
-            padding-bottom: 30px; 
-        }
-        
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .coupon-ticket { background: #ffffff; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05)); clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 95% 95%, 90% 100%, 85% 95%, 80% 100%, 75% 95%, 70% 100%, 65% 95%, 60% 100%, 55% 95%, 50% 100%, 45% 95%, 40% 100%, 35% 95%, 30% 100%, 25% 95%, 20% 100%, 15% 95%, 10% 100%, 5% 95%, 0% 100%); padding-bottom: 30px; }
         .color-transition { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+        
+        /* スマホ用タップアニメーション */
+        .shop-card-touch { transition: transform 0.1s ease; touch-action: manipulation; }
+        .shop-card-touch:active { transform: scale(0.96); opacity: 0.9; }
 
-        /* スマホでのタップ反応を良くするためのスタイル修正 */
-        .tap-active { transition: transform 0.1s ease; }
-        .tap-active:active { transform: scale(0.97); }
-
-        /* ログイン画面用 */
-        .input-field { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 16px; outline: none; transition: border 0.3s; background: white; -webkit-appearance: none; }
-        .input-field:focus { border-color: #c5a178; box-shadow: 0 0 0 2px rgba(197, 161, 120, 0.2); }
-        .btn-primary { width: 100%; padding: 14px; background-color: #c5a178; color: white; border-radius: 999px; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: opacity 0.3s, transform 0.1s; }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .input-field { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 16px; outline: none; background: white; -webkit-appearance: none; }
+        .btn-primary { width: 100%; padding: 14px; background-color: #c5a178; color: white; border-radius: 999px; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: opacity 0.3s; }
+        .btn-primary:active { transform: scale(0.98); opacity: 0.8; }
+        .btn-primary:disabled { opacity: 0.5; }
     </style>
 </head>
 <body class="bgBase">
@@ -91,88 +64,75 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // =================================================================
-        // ★★★ 設定完了済みエリア（変更不要） ★★★
+        // ★★★ 設定完了済みエリア（新しいURLに変更済み） ★★★
         // =================================================================
         const LIFF_ID = "2008962877-6EjpZ2wZ";
-        const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbzs7E6JSktJ1SUzepLWnw6eQPGKH7VKrUz42FkvvYs_y7EiAdoxhWjgmd8oDCiWd_ti/exec"; 
+        
+        // ★ここを新しいURLに書き換えました！
+        const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbzA6DmZmY2V1aSUVBol-CawgZgcBj5vp_meBIMoyHNOqf-xrLJCV4B5XhELMkQjhjE3/exec"; 
+        
+        // こちらは以前のままです
         const DATA_API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec";
+        
         const ELME_FORM_URL = "https://liff.line.me/2008962877-F6uzywmh?unique_key=MPpR55&ts=1769672204";
         // =================================================================
 
+        // ヘルパー
         const formatImageUrl = (url) => {
             if(!url) return null;
             let clean = url.trim();
             const idMatch = clean.match(/\/d\/(.+?)\/|id=(.+?)(&|$)/);
             if(clean.includes("drive.google") && idMatch) {
                 const id = idMatch[1] || idMatch[2];
-                return `https://lh3.googleusercontent.com/d/${id}`;
+                return `https://drive.google.com/uc?export=view&id=${id}`;
             }
             return clean;
         };
 
-        const CATEGORY_THEMES = {
-            "すべて": { main: "#c5a178", text: "#fff", dark: "#a1825e", badgeText: "#fff", sub: "#fff7e4" },
-            "カフェ": { main: "#8d6e63", text: "#fff", dark: "#5d4037", badgeText: "#fff", sub: "#efebe9" },
-            "飲食": { main: "#fb923c", text: "#fff", dark: "#c2410c", badgeText: "#fff", sub: "#fff7ed" },
-            "美容・健康": { main: "#22d3ee", text: "#fff", dark: "#0e7490", badgeText: "#fff", sub: "#ecfeff" },
-            "ショッピング": { main: "#ec4899", text: "#fff", dark: "#be185d", badgeText: "#fff", sub: "#fdf2f8" },
-            "サービス": { main: "#10b981", text: "#fff", dark: "#047857", badgeText: "#fff", sub: "#ecfdf5" },
-            "default": { main: "#c5a178", text: "#fff", dark: "#b08d66", badgeText: "#fff", sub: "#fff7e4" }
+        const CATEGORY_THEMES = { 
+            "すべて": { main: "#c5a178", text: "#fff", dark: "#a1825e", badgeText: "#fff", sub: "#fff7e4" }, 
+            "カフェ": { main: "#8d6e63", text: "#fff", dark: "#5d4037", badgeText: "#fff", sub: "#efebe9" }, 
+            "飲食": { main: "#fb923c", text: "#fff", dark: "#c2410c", badgeText: "#fff", sub: "#fff7ed" }, 
+            "美容・健康": { main: "#22d3ee", text: "#fff", dark: "#0e7490", badgeText: "#fff", sub: "#ecfeff" }, 
+            "ショッピング": { main: "#ec4899", text: "#fff", dark: "#be185d", badgeText: "#fff", sub: "#fdf2f8" }, 
+            "サービス": { main: "#10b981", text: "#fff", dark: "#047857", badgeText: "#fff", sub: "#ecfdf5" }, 
+            "default": { main: "#c5a178", text: "#fff", dark: "#b08d66", badgeText: "#fff", sub: "#fff7e4" } 
+        };
+        const getTheme = (cat) => CATEGORY_THEMES[cat] || CATEGORY_THEMES["default"];
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = { 
+                search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>, 
+                mapPin: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>, 
+                heart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>, 
+                heartFill: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>, 
+                arrowLeft: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>, 
+                externalLink: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>, 
+                home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>, 
+                chevronRight: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>, 
+                x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>, 
+                lock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> 
+            };
+            return <span className={className}>{icons[name] || null}</span>;
         };
 
-        const getTheme = (category) => CATEGORY_THEMES[category] || CATEGORY_THEMES["default"];
-
-        const Icon = ({ name, size = 20, className = "", style = {} }) => {
-            const icons = {
-                search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-                mapPin: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
-                heart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>,
-                heartFill: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>,
-                arrowLeft: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
-                externalLink: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>,
-                home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
-                chevronRight: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>,
-                x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                lock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            };
-            return <span className={className} style={style}>{icons[name] || null}</span>;
-        };
-
-        const ImageCarousel = ({ images, shopName, theme }) => {
-            const [currentIndex, setCurrentIndex] = useState(0);
-            const handleScroll = (e) => {
-                const index = Math.round(e.target.scrollLeft / e.target.offsetWidth);
-                setCurrentIndex(index);
-            };
-
-            if (!images || images.length === 0) {
-                return (
-                    <div className="w-full h-full flex items-center justify-center text-textLight flex-col color-transition" style={{ backgroundColor: theme.main }}>
-                        <Icon name="mapPin" size={40} className="mb-2 opacity-30" />
-                        <span className="text-sm font-bold opacity-50">No Image</span>
-                    </div>
-                );
-            }
-
+        const ImageCarousel = ({ images, shopName, theme }) => { 
+            const [currentIndex, setCurrentIndex] = useState(0); 
+            const handleScroll = (e) => { setCurrentIndex(Math.round(e.target.scrollLeft / e.target.offsetWidth)); }; 
+            if (!images || images.length === 0) { 
+                return (<div className="w-full h-full flex items-center justify-center text-textLight flex-col color-transition" style={{ backgroundColor: theme.main }}><Icon name="mapPin" size={40} className="mb-2 opacity-30" /><span className="text-sm font-bold opacity-50">No Image</span></div>); 
+            } 
             return (
                 <div className="relative w-full h-full group">
                     <div className="flex overflow-x-auto snap-x snap-mandatory h-full w-full hide-scrollbar" onScroll={handleScroll}>
-                        {images.map((src, i) => (
-                            <img key={i} src={src} onError={(e) => {e.target.style.display='none';}} alt={`${shopName} ${i+1}`} className="w-full h-full object-cover flex-shrink-0 snap-center bg-gray-100" />
-                        ))}
+                        {images.map((src, i) => (<img key={i} src={src} onError={(e) => { e.target.style.display = 'none'; }} alt={`${shopName} ${i + 1}`} className="w-full h-full object-cover flex-shrink-0 snap-center bg-gray-100" />))}
                     </div>
-                    {images.length > 1 && (
-                        <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10 pointer-events-none">
-                            {images.map((_, i) => (
-                                <div key={i} className={`w-2 h-2 rounded-full shadow-sm transition-all duration-300 ${i === currentIndex ? 'scale-125' : 'bg-white/70'}`} style={{ backgroundColor: i === currentIndex ? theme.dark : undefined }} />
-                            ))}
-                        </div>
-                    )}
+                    {images.length > 1 && (<div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10 pointer-events-none">{images.map((_, i) => (<div key={i} className={`w-2 h-2 rounded-full shadow-sm transition-all duration-300 ${i === currentIndex ? 'scale-125' : 'bg-white/70'}`} style={{ backgroundColor: i === currentIndex ? theme.dark : undefined }} />))}</div>)}
                 </div>
-            );
+            ); 
         };
 
-        // --- ログイン画面 ---
+        // --- コンポーネント: ログイン画面 ---
         const LoginView = ({ onLoginSuccess }) => {
             const [companyId, setCompanyId] = useState("");
             const [employeeNo, setEmployeeNo] = useState("");
@@ -188,16 +148,15 @@
                     const profile = await liff.getProfile();
                     const res = await fetch(AUTH_API_URL, {
                         method: 'POST',
+                        mode: 'cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ userId: profile.userId, companyId: companyId, employeeNo: employeeNo })
                     });
                     const json = await res.json();
                     
                     if (json.success) {
-                        if (ELME_FORM_URL && ELME_FORM_URL.startsWith("http")) {
-                            window.location.href = ELME_FORM_URL;
-                        } else {
-                            onLoginSuccess();
-                        }
+                        if (ELME_FORM_URL && ELME_FORM_URL.startsWith("http")) window.location.href = ELME_FORM_URL;
+                        else onLoginSuccess();
                     } else {
                         setErrorMsg(json.message || "認証に失敗しました");
                     }
@@ -212,19 +171,92 @@
             return (
                 <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-bgBase animate-fade-in">
                     <div className="bg-white p-8 rounded-3xl shadow-lg w-full max-w-sm text-center">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                            <Icon name="lock" size={32} />
-                        </div>
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary"><Icon name="lock" size={32} /></div>
                         <h1 className="text-xl font-bold text-textMain mb-2">社員認証</h1>
-                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。<br/>会社から配布された情報を入力してください。</p>
+                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。</p>
                         <div className="space-y-4 text-left">
                             <div><label className="text-xs font-bold text-textMain ml-1">会社ID</label><input type="text" className="input-field" placeholder="例: ena" value={companyId} onChange={e => setCompanyId(e.target.value)} /></div>
                             <div><label className="text-xs font-bold text-textMain ml-1">社員番号</label><input type="text" className="input-field" placeholder="例: 001" value={employeeNo} onChange={e => setEmployeeNo(e.target.value)} /></div>
                         </div>
                         {errorMsg && <p className="text-red-500 text-xs mt-2 font-bold">{errorMsg}</p>}
-                        <button onClick={handleSubmit} disabled={isSubmitting || !companyId || !employeeNo} className="btn-primary mt-6 shadow-md">
-                            {isSubmitting ? '認証中...' : '認証して次へ'}
+                        <button onClick={handleSubmit} disabled={isSubmitting || !companyId || !employeeNo} className="btn-primary mt-6 shadow-md">{isSubmitting ? '認証中...' : '認証して次へ'}</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- コンポーネント: 店舗詳細 ---
+        const ShopDetailView = ({ shop, onClose, toggleFavorite, favorites }) => {
+            if (!shop) return null;
+            const theme = getTheme(shop.category);
+            const isFav = favorites.includes(shop.id);
+            const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${shop.lat || ""},${shop.lng || ""}`;
+            return (
+                <div className="pb-40 animate-fade-in relative bg-white min-h-screen w-full md:max-w-4xl mx-auto shadow-2xl">
+                    <button onClick={onClose} className="fixed top-4 left-4 z-50 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg transition border border-slate-100 color-transition text-textMain"><Icon name="arrowLeft" /></button>
+                    <div className="relative h-72 md:h-96 w-full">
+                        <ImageCarousel images={shop.images} shopName={shop.name} theme={theme} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10 pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
+                            <span className="text-xs font-bold px-3 py-1 rounded-full mb-2 inline-block shadow-md" style={{ backgroundColor: theme.main, color: theme.badgeText }}>{shop.category}</span>
+                            <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-1 shadow-black drop-shadow-md">{shop.name}</h1>
+                            <div className="flex items-center text-sm md:text-base text-white/95"><Icon name="mapPin" size={14} className="mr-1" />{shop.address}</div>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); toggleFavorite(shop.id); }} className="absolute bottom-5 right-5 p-3 rounded-full bg-white shadow-lg transform transition active:scale-90 z-20"><Icon name={isFav ? "heartFill" : "heart"} size={24} style={{ color: isFav ? '#c5a178' : '#cbd5e1' }} /></button>
+                    </div>
+                    <div className="px-4 md:px-8 py-6 space-y-6">
+                        <div className="bg-white rounded-3xl shadow-sm p-6 border-2 color-transition" style={{ borderColor: theme.main }}>
+                            <h2 className="text-lg font-bold mb-4 flex items-center color-transition" style={{ color: '#5d4037' }}><span className="w-2 h-6 rounded-full mr-2" style={{ backgroundColor: theme.main }}></span>店舗情報</h2>
+                            <div className="space-y-3 text-sm md:text-base text-textMain">
+                                <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">営業時間</span><span>{shop.hours}</span></div>
+                                <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">定休日</span><span>{shop.holiday}</span></div>
+                                <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">電話番号</span><a href={`tel:${shop.phone}`} className="font-bold underline" style={{ color: theme.dark }}>{shop.phone}</a></div>
+                                {shop.website && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">公式サイト</span><a href={shop.website} target="_blank" className="flex items-center hover:opacity-70" style={{ color: theme.dark }}>Webサイト <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
+                                {shop.sns && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">SNS</span><a href={shop.sns} target="_blank" className="flex items-center hover:opacity-70" style={{ color: theme.dark }}>SNSを見る <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
+                                {shop.note && <div className="flex pt-1"><span className="w-24 text-textLight font-medium flex-shrink-0">備考</span><span>{shop.note}</span></div>}
+                            </div>
+                        </div>
+                        {shop.couponImages && shop.couponImages.length > 0 && shop.couponImages[0] !== "" && (
+                            <div className="space-y-4">
+                                {shop.couponImages.map((img, idx) => (
+                                    <div key={idx} className="coupon-ticket text-center p-6 rounded-2xl shadow-sm border-2 color-transition" style={{ borderColor: theme.main, background: `linear-gradient(to bottom right, #fff, ${theme.main}22)` }}>
+                                        <h3 className="text-lg font-bold mb-3 flex items-center justify-center color-transition" style={{ color: '#5d4037' }}><span className="text-2xl mr-2">🎁</span> 特別クーポン {idx+1}</h3>
+                                        <div className="rounded-xl overflow-hidden border border-slate-200 mb-4 bg-white shadow-inner"><img src={img} alt="Coupon" className="w-full h-auto" onError={(e) => e.target.style.display='none'} /></div>
+                                        {shop.couponUrls[idx] && shop.couponUrls[idx] !== "#" && shop.couponUrls[idx] !== "" ? (
+                                            <a href={shop.couponUrls[idx]} target="_blank" className="block w-full text-white font-bold py-4 rounded-full shadow-lg transform transition active:scale-95 text-lg color-transition hover:opacity-90" style={{ backgroundColor: theme.dark }}>このクーポンを使う</a>
+                                        ) : (
+                                            <button disabled className="w-full bg-slate-300 text-white font-bold py-4 rounded-full cursor-not-allowed">店頭で提示のみ</button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-100 z-50 safe-area-bottom md:max-w-4xl md:mx-auto">
+                        <a href={mapUrl} target="_blank" className="block w-full text-white font-bold py-3.5 rounded-xl shadow-lg text-center flex items-center justify-center transition active:scale-95 color-transition hover:opacity-90" style={{ backgroundColor: theme.dark }}><Icon name="mapPin" className="mr-2" />ここへ行く（ルート案内）</a>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- コンポーネント: 店舗カード ---
+        const ShopCard = ({ shop, onClick, toggleFavorite, favorites }) => {
+            const firstImage = (shop.images && shop.images.length > 0) ? shop.images[0] : null;
+            const isFav = favorites.includes(shop.id);
+            const theme = getTheme(shop.category);
+            
+            return (
+                <div onClick={onClick} className="bg-white rounded-2xl shadow-sm overflow-hidden shop-card-touch cursor-pointer flex flex-col h-full animate-pop-in border border-transparent">
+                    <div className="h-32 md:h-48 w-full relative overflow-hidden" style={{ backgroundColor: theme.main }}>
+                        {firstImage ? <img src={firstImage} alt={shop.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center" style={{ color: 'rgba(255,255,255,0.7)' }}><Icon name="mapPin" size={24} /></div>}
+                        <button onClick={(e) => { e.stopPropagation(); toggleFavorite(shop.id); }} className="absolute top-2 right-2 bg-white/90 rounded-full p-2 shadow-md active:scale-90 transition-transform">
+                            <Icon name={isFav ? "heartFill" : "heart"} size={18} style={{ color: isFav ? '#c5a178' : '#cbd5e1' }} />
                         </button>
+                        <div className="absolute bottom-2 left-2 text-[10px] px-3 py-1 rounded-full font-bold shadow-md bg-white/90" style={{ color: theme.dark }}>{shop.category}</div>
+                    </div>
+                    <div className="p-3 flex-grow flex flex-col justify-between">
+                        <div><h3 className="font-bold text-sm md:text-base mb-1 text-textMain leading-snug">{shop.name}</h3><div className="flex items-center text-textLight text-xs md:text-sm mb-2"><Icon name="mapPin" size={10} className="mr-1 flex-shrink-0" /><span className="truncate">{shop.address}</span></div></div>
+                        <div className="mt-2 text-right"><span className="text-xs md:text-sm border px-3 py-1.5 rounded-full font-bold shadow-sm inline-flex items-center" style={{ backgroundColor: theme.sub, borderColor: theme.main, color: theme.dark }}>詳細 <Icon name="chevronRight" size={12} className="ml-1" /></span></div>
                     </div>
                 </div>
             );
@@ -232,11 +264,9 @@
 
         // --- メインアプリ ---
         const App = () => {
-            const [status, setStatus] = useState("loading"); 
+            const [status, setStatus] = useState("loading");
             const [shops, setShops] = useState([]);
-            // ★重要修正：データ取得フラグを追加
             const [isDataLoaded, setIsDataLoaded] = useState(false);
-            
             const [view, setView] = useState('list');
             const [selectedShop, setSelectedShop] = useState(null);
             const [searchTerm, setSearchTerm] = useState("");
@@ -256,12 +286,13 @@
                         if (!liff.isLoggedIn()) { liff.login(); return; }
                         
                         const profile = await liff.getProfile();
+                        if (!profile || !profile.userId) { alert("LINE IDが取得できません。LIFF URLから開いてください。"); return; }
+
                         const authRes = await fetch(`${AUTH_API_URL}?userId=${profile.userId}`);
                         const authJson = await authRes.json();
 
                         if (authJson.registered) {
                             setStatus("authorized");
-                            // 認証OKならそのままデータ取得へ移行（ローディングは継続）
                             fetchShops();
                         } else {
                             setStatus("login");
@@ -287,30 +318,14 @@
                         couponUrls: (item.coupon_urls || "").split(',').map(s => s.trim()),
                         lat: item.lat, lng: item.lng
                     })));
-                    
-                    // ★データセット後にフラグを立てる（ここで初めてローディング解除）
                     setIsDataLoaded(true);
-                    
-                } catch(e) { 
-                    console.error("Data load error", e);
-                    // エラーでもローディングは終わらせる（エラー表示にするとなお良い）
-                    setIsDataLoaded(true);
-                }
+                } catch(e) { console.error("Data load error", e); setIsDataLoaded(true); }
             };
 
-            // エルメへ飛ばせない場合の予備動作
-            const handleLoginSuccess = async () => {
-                setStatus("authorized");
-                fetchShops();
-            };
+            const handleLoginSuccess = async () => { setStatus("authorized"); fetchShops(); };
+            const toggleFavorite = (id) => { const next = favorites.includes(id) ? favorites.filter(i => i !== id) : [...favorites, id]; setFavorites(next); localStorage.setItem('myAppFavorites', JSON.stringify(next)); };
 
-            const toggleFavorite = (id) => {
-                const next = favorites.includes(id) ? favorites.filter(i => i !== id) : [...favorites, id];
-                setFavorites(next);
-                localStorage.setItem('myAppFavorites', JSON.stringify(next));
-            };
-
-            // スワイプ処理
+            // Swipe logic
             const [touchStart, setTouchStart] = useState(null);
             const [touchEnd, setTouchEnd] = useState(null);
             const onTouchStart = (e) => { setTouchEnd(null); setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY }); };
@@ -326,15 +341,11 @@
                 setTouchStart(null); setTouchEnd(null);
             };
 
-            // フィルター
             const filteredShops = useMemo(() => {
                 let data = shops;
                 if (view === 'favorites') data = data.filter(s => favorites.includes(s.id));
                 if (selectedCategory !== "すべて") data = data.filter(s => s.category === selectedCategory);
-                if (searchTerm) {
-                    const low = searchTerm.toLowerCase();
-                    data = data.filter(s => (s.name && s.name.toLowerCase().includes(low)) || (s.address && s.address.toLowerCase().includes(low)));
-                }
+                if (searchTerm) { const low = searchTerm.toLowerCase(); data = data.filter(s => (s.name && s.name.toLowerCase().includes(low)) || (s.address && s.address.toLowerCase().includes(low))); }
                 return data;
             }, [shops, view, selectedCategory, searchTerm, favorites]);
 
@@ -342,103 +353,9 @@
             const goHome = () => { setSelectedShop(null); setView('list'); setSearchTerm(""); setSelectedCategory("すべて"); setIsSearchOpen(false); };
             const goFavorites = () => { setSelectedShop(null); setView('favorites'); window.scrollTo(0, 0); setIsSearchOpen(false); };
 
-            // ★修正：ローディング判定を厳密化
-            // statusがloading、または（authorized だけど データがまだロードされていない）場合はローディング表示
-            if (status === "loading" || (status === "authorized" && !isDataLoaded)) {
-                return (
-                    <div className="flex flex-col items-center justify-center h-screen bg-bgBase">
-                        <div className="animate-spin text-primary w-10 h-10 border-4 border-current border-t-transparent rounded-full mb-4"></div>
-                        <p className="text-textMain font-bold text-sm tracking-widest animate-pulse">LOADING...</p>
-                    </div>
-                );
-            }
-
+            if (status === "loading" || (status === "authorized" && !isDataLoaded)) return <div className="flex flex-col items-center justify-center h-screen bg-bgBase"><div className="animate-spin text-primary w-10 h-10 border-4 border-current border-t-transparent rounded-full mb-4"></div><p className="text-textMain font-bold text-sm tracking-widest animate-pulse">LOADING...</p></div>;
             if (status === "login") return <LoginView onLoginSuccess={handleLoginSuccess} />;
-
-            // --- サブコンポーネント: ShopCard (ワンタップ修正版) ---
-            const ShopCard = ({ shop }) => {
-                const firstImage = (shop.images && shop.images.length > 0) ? shop.images[0] : null;
-                const isFav = favorites.includes(shop.id);
-                const theme = getTheme(shop.category);
-                
-                // ★修正: スマホでの反応を良くするため、group/hover系クラスを削除し、tap-activeを追加
-                return (
-                    <div 
-                        onClick={() => handleShopClick(shop)} 
-                        className="bg-white rounded-2xl shadow-sm overflow-hidden tap-active cursor-pointer flex flex-col h-full animate-pop-in border border-transparent"
-                    >
-                        <div className="h-32 md:h-48 w-full relative overflow-hidden" style={{ backgroundColor: theme.main }}>
-                            {firstImage ? <img src={firstImage} alt={shop.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center" style={{ color: 'rgba(255,255,255,0.7)' }}><Icon name="mapPin" size={24} /></div>}
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(shop.id); }} className="absolute top-2 right-2 bg-white/90 rounded-full p-2 shadow-md active:scale-90 transition-transform">
-                                <Icon name={isFav ? "heartFill" : "heart"} size={18} style={{ color: isFav ? '#c5a178' : '#cbd5e1' }} />
-                            </button>
-                            <div className="absolute bottom-2 left-2 text-[10px] px-3 py-1 rounded-full font-bold shadow-md bg-white/90" style={{ color: theme.dark }}>{shop.category}</div>
-                        </div>
-                        <div className="p-3 flex-grow flex flex-col justify-between">
-                            <div>
-                                <h3 className="font-bold text-sm md:text-base mb-1 text-textMain leading-snug">{shop.name}</h3>
-                                <div className="flex items-center text-textLight text-xs md:text-sm mb-2"><Icon name="mapPin" size={10} className="mr-1 flex-shrink-0" /><span className="truncate">{shop.address}</span></div>
-                            </div>
-                            <div className="mt-2 text-right">
-                                <span className="text-xs md:text-sm border px-3 py-1.5 rounded-full font-bold shadow-sm inline-flex items-center" style={{ backgroundColor: theme.sub, borderColor: theme.main, color: theme.dark }}>詳細 <Icon name="chevronRight" size={12} className="ml-1" /></span>
-                            </div>
-                        </div>
-                    </div>
-                );
-            };
-
-            // Detail View
-            if (view === 'detail') {
-                const theme = getTheme(selectedShop.category);
-                const isFav = favorites.includes(selectedShop.id);
-                const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${selectedShop.lat || ""},${selectedShop.lng || ""}`;
-                return (
-                    <div className="pb-40 animate-fade-in relative bg-white min-h-screen w-full md:max-w-4xl mx-auto shadow-2xl">
-                        <button onClick={() => setView(view === 'favorites' ? 'favorites' : 'list')} className="fixed top-4 left-4 z-50 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg transition border border-slate-100 color-transition text-textMain"><Icon name="arrowLeft" /></button>
-                        <div className="relative h-72 md:h-96 w-full">
-                            <ImageCarousel images={selectedShop.images} shopName={selectedShop.name} theme={theme} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10 pointer-events-none"></div>
-                            <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
-                                <span className="text-xs font-bold px-3 py-1 rounded-full mb-2 inline-block shadow-md" style={{ backgroundColor: theme.main, color: theme.badgeText }}>{selectedShop.category}</span>
-                                <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-1 shadow-black drop-shadow-md">{selectedShop.name}</h1>
-                                <div className="flex items-center text-sm md:text-base text-white/95"><Icon name="mapPin" size={14} className="mr-1" />{selectedShop.address}</div>
-                            </div>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(selectedShop.id); }} className="absolute bottom-5 right-5 p-3 rounded-full bg-white shadow-lg transform transition active:scale-90 z-20"><Icon name={isFav ? "heartFill" : "heart"} size={24} style={{ color: isFav ? '#c5a178' : '#cbd5e1' }} /></button>
-                        </div>
-                        <div className="px-4 md:px-8 py-6 space-y-6">
-                            <div className="bg-white rounded-3xl shadow-sm p-6 border-2 color-transition" style={{ borderColor: theme.main }}>
-                                <h2 className="text-lg font-bold mb-4 flex items-center color-transition" style={{ color: '#5d4037' }}><span className="w-2 h-6 rounded-full mr-2" style={{ backgroundColor: theme.main }}></span>店舗情報</h2>
-                                <div className="space-y-3 text-sm md:text-base text-textMain">
-                                    <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">営業時間</span><span>{selectedShop.hours}</span></div>
-                                    <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">定休日</span><span>{selectedShop.holiday}</span></div>
-                                    <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">電話番号</span><a href={`tel:${selectedShop.phone}`} className="font-bold underline" style={{ color: theme.dark }}>{selectedShop.phone}</a></div>
-                                    {selectedShop.website && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">公式サイト</span><a href={selectedShop.website} target="_blank" className="flex items-center hover:opacity-70" style={{ color: theme.dark }}>Webサイト <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
-                                    {selectedShop.sns && <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">SNS</span><a href={selectedShop.sns} target="_blank" className="flex items-center hover:opacity-70" style={{ color: theme.dark }}>SNSを見る <Icon name="externalLink" size={12} className="ml-1" /></a></div>}
-                                    {selectedShop.note && <div className="flex pt-1"><span className="w-24 text-textLight font-medium flex-shrink-0">備考</span><span>{selectedShop.note}</span></div>}
-                                </div>
-                            </div>
-                            {selectedShop.couponImages && selectedShop.couponImages.length > 0 && selectedShop.couponImages[0] !== "" && (
-                                <div className="space-y-4">
-                                    {selectedShop.couponImages.map((img, idx) => (
-                                        <div key={idx} className="coupon-ticket text-center p-6 rounded-2xl shadow-sm border-2 color-transition" style={{ borderColor: theme.main, background: `linear-gradient(to bottom right, #fff, ${theme.main}22)` }}>
-                                            <h3 className="text-lg font-bold mb-3 flex items-center justify-center color-transition" style={{ color: '#5d4037' }}><span className="text-2xl mr-2">🎁</span> 特別クーポン {selectedShop.couponImages.length > 1 ? `(${idx+1})` : ""}</h3>
-                                            <div className="rounded-xl overflow-hidden border border-slate-200 mb-4 bg-white shadow-inner"><img src={img} alt="Coupon" className="w-full h-auto" onError={(e) => e.target.style.display='none'} /></div>
-                                            {selectedShop.couponUrls[idx] && selectedShop.couponUrls[idx] !== "#" && selectedShop.couponUrls[idx] !== "" ? (
-                                                <a href={selectedShop.couponUrls[idx]} target="_blank" className="block w-full text-white font-bold py-4 rounded-full shadow-lg transform transition active:scale-95 text-lg color-transition hover:opacity-90" style={{ backgroundColor: theme.dark }}>このクーポンを使う</a>
-                                            ) : (
-                                                <button disabled className="w-full bg-slate-300 text-white font-bold py-4 rounded-full cursor-not-allowed">店頭で提示のみ</button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-100 z-50 safe-area-bottom md:max-w-4xl md:mx-auto">
-                            <a href={mapUrl} target="_blank" className="block w-full text-white font-bold py-3.5 rounded-xl shadow-lg text-center flex items-center justify-center transition active:scale-95 color-transition hover:opacity-90" style={{ backgroundColor: theme.dark }}><Icon name="mapPin" className="mr-2" />ここへ行く（ルート案内）</a>
-                        </div>
-                    </div>
-                );
-            }
+            if (view === 'detail') return <ShopDetailView shop={selectedShop} onClose={() => setView(view === 'favorites' ? 'favorites' : 'list')} toggleFavorite={toggleFavorite} favorites={favorites} />;
 
             return (
                 <div className="pb-24 w-full md:max-w-7xl mx-auto min-h-screen relative bg-bgBase animate-fade-in">
@@ -448,31 +365,13 @@
                                 <div><h1 className="text-xl md:text-2xl font-bold tracking-wide flex items-center color-transition" style={{ color: currentTheme.text }}>{view === 'favorites' ? 'お気に入り' : '加盟店一覧'}{view !== 'favorites' && (<span className="ml-3 text-xs px-2 py-0.5 rounded-full font-bold color-transition border border-white/20" style={{ backgroundColor: 'rgba(255,255,255,0.3)', color: currentTheme.text }}>{filteredShops.length}件</span>)}</h1></div>
                                 {view !== 'favorites' && <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 rounded-full transition-colors duration-200 color-transition hover:bg-white/30" style={{ backgroundColor: isSearchOpen ? 'white' : 'transparent', color: isSearchOpen ? currentTheme.main : currentTheme.text }}><Icon name={isSearchOpen ? "x" : "search"} size={22} /></button>}
                             </div>
-                            {view !== 'favorites' && (
-                                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'max-h-20 opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
-                                    <div className="relative mb-2">
-                                        <input type="text" placeholder="店名・住所・キーワードで検索..." className="w-full bg-white/90 border-none rounded-full py-2.5 pl-10 pr-4 text-sm focus:ring-2 shadow-inner placeholder-textLight outline-none color-transition" style={{ color: '#5d4037', '--tw-ring-color': currentTheme.dark }} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                                        <div className="absolute left-3.5 top-2.5 text-textLight"><Icon name="search" size={18} /></div>
-                                    </div>
-                                </div>
-                            )}
+                            {isSearchOpen && view !== 'favorites' && <div className="mt-3 relative mb-2"><input type="text" placeholder="検索..." className="w-full bg-white/90 border-none rounded-full py-2.5 pl-10 pr-4 text-sm focus:ring-2 shadow-inner text-textMain outline-none" style={{'--tw-ring-color': currentTheme.dark}} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><div className="absolute left-3.5 top-2.5 text-textLight"><Icon name="search" size={18} /></div></div>}
                         </div>
-                        {view !== 'favorites' && (
-                            <div className="px-4 pb-4">
-                                <div className="flex space-x-2 overflow-x-auto hide-scrollbar" ref={categoryTabsRef}>
-                                    {categories.map(cat => {
-                                        const isActive = selectedCategory === cat;
-                                        const theme = getTheme(cat);
-                                        return <button key={cat} data-category={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all border-2 ${selectedCategory === cat ? 'scale-105 shadow-md' : ''}`} style={{ backgroundColor: selectedCategory === cat ? theme.badgeText : 'transparent', color: selectedCategory === cat ? (theme.badgeText === '#fff' ? theme.main : theme.text) : theme.text, borderColor: selectedCategory === cat ? 'transparent' : 'rgba(255,255,255,0.6)' }}>{cat}</button>;
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        {view !== 'favorites' && <div className="px-4 pb-4"><div className="flex space-x-2 overflow-x-auto hide-scrollbar" ref={categoryTabsRef}>{categories.map(cat => <button key={cat} data-category={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all border-2 ${selectedCategory === cat ? 'scale-105 shadow-md' : ''}`} style={{ backgroundColor: selectedCategory === cat ? getTheme(cat).badgeText : 'transparent', color: selectedCategory === cat ? (getTheme(cat).badgeText === '#fff' ? getTheme(cat).main : getTheme(cat).text) : getTheme(cat).text, borderColor: selectedCategory === cat ? 'transparent' : 'rgba(255,255,255,0.6)' }}>{cat}</button>)}</div></div>}
                     </div>
-
                     <div className="px-4 md:px-6 min-h-[50vh]" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 animate-slide-in">
-                            {filteredShops.length > 0 ? (filteredShops.map(shop => <ShopCard key={shop.id} shop={shop} />)) : (
+                            {filteredShops.length > 0 ? (filteredShops.map(shop => <ShopCard key={shop.id} shop={shop} onClick={() => handleShopClick(shop)} toggleFavorite={toggleFavorite} favorites={favorites} />)) : (
                                 <div className="col-span-2 md:col-span-3 text-center py-20 text-textLight animate-fade-in">
                                     <div className="mb-4 flex justify-center opacity-30"><Icon name="search" size={64} /></div>
                                     <p className="text-lg font-bold opacity-70 color-transition" style={{ color: '#5d4037' }}>お店が見つかりません...</p>
@@ -482,7 +381,6 @@
                             )}
                         </div>
                     </div>
-
                     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md rounded-full shadow-2xl border border-slate-100 flex px-10 py-3 z-40 space-x-16 items-center">
                         <button onClick={goHome} className={`flex flex-col items-center justify-center transition duration-300 transform ${view === 'list' ? 'scale-110' : 'hover:opacity-70'}`} style={{ color: view === 'list' ? currentTheme.main : '#8d7b75' }}><Icon name="home" size={26} /><span className="text-[10px] mt-0.5 font-bold">ホーム</span></button>
                         <button onClick={goFavorites} className={`flex flex-col items-center justify-center transition duration-300 transform ${view === 'favorites' ? 'scale-110' : 'hover:opacity-70'}`} style={{ color: view === 'favorites' ? '#f472b6' : '#8d7b75' }}><Icon name={view === 'favorites' ? "heartFill" : "heart"} size={26} /><span className="text-[10px] mt-0.5 font-bold">お気に入り</span></button>
