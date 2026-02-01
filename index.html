@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- キャッシュ対策 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     
     <title>加盟店一覧</title>
 
+    <!-- LINE SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -62,15 +65,19 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // =================================================================
-        // ★★★ 設定エリア（本当に修正しました） ★★★
+        // ★★★ 設定エリア（修正済み） ★★★
         // =================================================================
-        const LIFF_ID = "https://liff.line.me/2008962877-wVhjZslw";
         
-        // ★★★↓↓↓ ここをあなたがくれた新しいURLに修正しました！ ↓↓↓★★★
+        // ★修正点：ここはURLではなく「ID文字列」だけにする必要があります
+        const LIFF_ID = "2008962877-wVhjZslw";
+        
+        // 認証用GAS (末尾 ...jE3/exec)
         const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbzA6DmZmY2V1aSUVBol-CawgZgcBj5vp_meBIMoyHNOqf-xrLJCV4B5XhELMkQjhjE3/exec"; 
-        // ★★★↑↑↑ 末尾が ...jE3/exec になっています ↑↑↑★★★
-
+        
+        // データ用GAS
         const DATA_API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec";
+        
+        // エルメURL (ご提示いただいた最新のts付きURL)
         const ELME_FORM_URL = "https://liff.line.me/2008962877-F6uzywmh?unique_key=MPpR55&ts=1769936647";
         // =================================================================
 
@@ -129,7 +136,7 @@
             ); 
         };
 
-        // --- コンポーネント: ログイン画面 ---
+        // --- ログイン画面 ---
         const LoginView = ({ onLoginSuccess }) => {
             const [companyId, setCompanyId] = useState("");
             const [employeeNo, setEmployeeNo] = useState("");
@@ -170,7 +177,7 @@
                     <div className="bg-white p-8 rounded-3xl shadow-lg w-full max-w-sm text-center">
                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary"><Icon name="lock" size={32} /></div>
                         <h1 className="text-xl font-bold text-textMain mb-2">社員認証</h1>
-                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。</p>
+                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。<br/>会社から配布された情報を入力してください。</p>
                         <div className="space-y-4 text-left">
                             <div><label className="text-xs font-bold text-textMain ml-1">会社ID</label><input type="text" className="input-field" placeholder="例: ena" value={companyId} onChange={e => setCompanyId(e.target.value)} /></div>
                             <div><label className="text-xs font-bold text-textMain ml-1">社員番号</label><input type="text" className="input-field" placeholder="例: 001" value={employeeNo} onChange={e => setEmployeeNo(e.target.value)} /></div>
@@ -241,7 +248,6 @@
             const firstImage = (shop.images && shop.images.length > 0) ? shop.images[0] : null;
             const isFav = favorites.includes(shop.id);
             const theme = getTheme(shop.category);
-            
             return (
                 <div onClick={onClick} className="bg-white rounded-2xl shadow-sm overflow-hidden shop-card-touch cursor-pointer flex flex-col h-full animate-pop-in border border-transparent">
                     <div className="h-32 md:h-48 w-full relative overflow-hidden" style={{ backgroundColor: theme.main }}>
