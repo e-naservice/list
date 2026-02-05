@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- キャッシュ対策 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
     <title>加盟店一覧</title>
 
@@ -173,7 +175,7 @@
                     <div className="bg-white p-8 rounded-3xl shadow-lg w-full max-w-sm text-center">
                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary"><Icon name="lock" size={32} /></div>
                         <h1 className="text-xl font-bold text-textMain mb-2">社員認証</h1>
-                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。</p>
+                        <p className="text-sm text-textLight mb-6">初回のみ認証が必要です。<br/>会社から配布された情報を入力してください。</p>
                         <div className="space-y-4 text-left">
                             <div><label className="text-xs font-bold text-textMain ml-1">会社ID</label><input type="text" className="input-field" placeholder="例: ena" value={companyId} onChange={e => setCompanyId(e.target.value)} /></div>
                             <div><label className="text-xs font-bold text-textMain ml-1">社員番号</label><input type="text" className="input-field" placeholder="例: 001" value={employeeNo} onChange={e => setEmployeeNo(e.target.value)} /></div>
@@ -205,24 +207,24 @@
                         <button onClick={(e) => { e.stopPropagation(); toggleFavorite(shop.id); }} className="absolute bottom-5 right-5 p-3 rounded-full bg-white shadow-lg transform transition active:scale-90 z-20"><Icon name={isFav ? "heartFill" : "heart"} size={24} style={{ color: isFav ? '#c5a178' : '#cbd5e1' }} /></button>
                     </div>
                     <div className="px-4 md:px-8 py-6 space-y-6">
-                        
-                        {/* ★★★ 求人情報（アルバイト募集） ★★★ */}
-                        {shop.jobUrl && (
-                            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 p-5 shadow-sm">
-                                <h3 className="text-orange-800 font-bold flex items-center mb-2 text-lg">
-                                    <Icon name="userPlus" className="mr-2" /> スタッフ募集中
-                                </h3>
-                                {shop.jobText && <p className="text-sm text-orange-900 mb-4 whitespace-pre-wrap">{shop.jobText}</p>}
-                                <a href={shop.jobUrl} target="_blank" rel="noopener noreferrer" className="block w-full bg-orange-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-transform hover:bg-orange-600">
-                                    応募はこちらから <Icon name="externalLink" size={14} className="ml-1 inline" />
-                                </a>
-                            </div>
-                        )}
-                        {/* ★★★ 求人情報 終了 ★★★ */}
-
                         <div className="bg-white rounded-3xl shadow-sm p-6 border-2 color-transition" style={{ borderColor: theme.main }}>
                             <h2 className="text-lg font-bold mb-4 flex items-center color-transition" style={{ color: '#5d4037' }}><span className="w-2 h-6 rounded-full mr-2" style={{ backgroundColor: theme.main }}></span>店舗情報</h2>
                             <div className="space-y-3 text-sm md:text-base text-textMain">
+                                
+                                {/* ★★★ 求人リンク（ここに追加） ★★★ */}
+                                {shop.jobUrl && (
+                                    <div className="flex border-b border-slate-100 pb-2">
+                                        <span className="w-24 text-textLight font-medium flex-shrink-0">アルバイト募集</span>
+                                        <div className="flex-1">
+                                            <a href={shop.jobUrl} target="_blank" rel="noopener noreferrer" className="flex items-center font-bold text-orange-500 hover:opacity-70 transition-opacity">
+                                                募集要項を見る <Icon name="externalLink" size={14} className="ml-1" />
+                                            </a>
+                                            {shop.jobText && <p className="text-xs text-textMain mt-1 whitespace-pre-wrap">{shop.jobText}</p>}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* ★★★ 求人情報 終了 ★★★ */}
+
                                 <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">営業時間</span><span>{shop.hours}</span></div>
                                 <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">定休日</span><span>{shop.holiday}</span></div>
                                 <div className="flex border-b border-slate-100 pb-2"><span className="w-24 text-textLight font-medium flex-shrink-0">電話番号</span><a href={`tel:${shop.phone}`} className="font-bold underline" style={{ color: theme.dark }}>{shop.phone}</a></div>
@@ -300,9 +302,10 @@
                         if (!liff.isLoggedIn()) { liff.login(); return; }
                         
                         const profile = await liff.getProfile();
+                        // IDチェック
                         if (!profile || !profile.userId) { alert("LINE IDが取得できません。LIFF URLから開いてください。"); return; }
 
-                        // キャッシュ回避
+                        // キャッシュ回避のためにタイムスタンプ(?t=...)を追加
                         const authRes = await fetch(`${AUTH_API_URL}?userId=${profile.userId}&t=${new Date().getTime()}`);
                         const authJson = await authRes.json();
 
