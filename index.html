@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- キャッシュ対策 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     
     <title>加盟店一覧</title>
 
@@ -69,17 +67,9 @@
         // =================================================================
         // ★★★ 設定エリア ★★★
         // =================================================================
-        
-        // LIFF ID (文字列)
         const LIFF_ID = "2008962877-wVhjZslw";
-        
-        // 認証用GAS (末尾 ...jE3/exec)
         const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbzA6DmZmY2V1aSUVBol-CawgZgcBj5vp_meBIMoyHNOqf-xrLJCV4B5XhELMkQjhjE3/exec"; 
-        
-        // データ用GAS
         const DATA_API_URL = "https://script.google.com/macros/s/AKfycbxlqdGFsGAteMhVTA63JdGK3L_ySKgBP3SsOTLBvRoRnsisttyE3c5WJpkEcps51YCtqw/exec";
-        
-        // エルメURL
         const ELME_FORM_URL = "https://liff.line.me/2008962877-F6uzywmh?unique_key=MPpR55&ts=1769936647";
         // =================================================================
 
@@ -117,7 +107,8 @@
                 home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>, 
                 chevronRight: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>, 
                 x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>, 
-                lock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> 
+                lock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+                userPlus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
             };
             return <span className={className}>{icons[name] || null}</span>;
         };
@@ -152,8 +143,6 @@
 
                 try {
                     const profile = await liff.getProfile();
-                    
-                    // GASへ送信 (モードはcors、ヘッダーはtext/plain)
                     const res = await fetch(AUTH_API_URL, {
                         method: 'POST',
                         mode: 'cors',
@@ -161,9 +150,7 @@
                         body: JSON.stringify({ userId: profile.userId, companyId: companyId, employeeNo: employeeNo })
                     });
                     
-                    if (!res.ok) {
-                        throw new Error(`Server Error: ${res.status}`);
-                    }
+                    if (!res.ok) throw new Error(`Server Error: ${res.status}`);
                     
                     const json = await res.json();
                     
@@ -175,7 +162,6 @@
                     }
                 } catch (e) {
                     console.error("Login Error:", e);
-                    // ★ここにエラーの詳細を表示させる修正を入れました
                     setErrorMsg("通信エラー: " + (e.message || e.toString()));
                 } finally {
                     setIsSubmitting(false);
@@ -199,7 +185,7 @@
             );
         };
 
-        // --- コンポーネント: 店舗詳細 ---
+        // --- 店舗詳細 (求人リンク付き) ---
         const ShopDetailView = ({ shop, onClose, toggleFavorite, favorites }) => {
             if (!shop) return null;
             const theme = getTheme(shop.category);
@@ -219,6 +205,21 @@
                         <button onClick={(e) => { e.stopPropagation(); toggleFavorite(shop.id); }} className="absolute bottom-5 right-5 p-3 rounded-full bg-white shadow-lg transform transition active:scale-90 z-20"><Icon name={isFav ? "heartFill" : "heart"} size={24} style={{ color: isFav ? '#c5a178' : '#cbd5e1' }} /></button>
                     </div>
                     <div className="px-4 md:px-8 py-6 space-y-6">
+                        
+                        {/* ★★★ 求人情報（アルバイト募集） ★★★ */}
+                        {shop.jobUrl && (
+                            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 p-5 shadow-sm">
+                                <h3 className="text-orange-800 font-bold flex items-center mb-2 text-lg">
+                                    <Icon name="userPlus" className="mr-2" /> スタッフ募集中
+                                </h3>
+                                {shop.jobText && <p className="text-sm text-orange-900 mb-4 whitespace-pre-wrap">{shop.jobText}</p>}
+                                <a href={shop.jobUrl} target="_blank" rel="noopener noreferrer" className="block w-full bg-orange-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-transform hover:bg-orange-600">
+                                    応募はこちらから <Icon name="externalLink" size={14} className="ml-1 inline" />
+                                </a>
+                            </div>
+                        )}
+                        {/* ★★★ 求人情報 終了 ★★★ */}
+
                         <div className="bg-white rounded-3xl shadow-sm p-6 border-2 color-transition" style={{ borderColor: theme.main }}>
                             <h2 className="text-lg font-bold mb-4 flex items-center color-transition" style={{ color: '#5d4037' }}><span className="w-2 h-6 rounded-full mr-2" style={{ backgroundColor: theme.main }}></span>店舗情報</h2>
                             <div className="space-y-3 text-sm md:text-base text-textMain">
@@ -301,7 +302,7 @@
                         const profile = await liff.getProfile();
                         if (!profile || !profile.userId) { alert("LINE IDが取得できません。LIFF URLから開いてください。"); return; }
 
-                        // ★キャッシュ回避のためにタイムスタンプ(?t=...)を追加
+                        // キャッシュ回避
                         const authRes = await fetch(`${AUTH_API_URL}?userId=${profile.userId}&t=${new Date().getTime()}`);
                         const authJson = await authRes.json();
 
@@ -330,6 +331,9 @@
                         images: (item.image || "").split(',').filter(s => s.trim()).map(formatImageUrl),
                         couponImages: (item.coupon_imgs || "").split(',').filter(s => s.trim()).map(formatImageUrl),
                         couponUrls: (item.coupon_urls || "").split(',').map(s => s.trim()),
+                        // ★求人情報 (job_text, job_url) を読み込む設定を追加
+                        jobText: item.job_text, 
+                        jobUrl: item.job_url,
                         lat: item.lat, lng: item.lng
                     })));
                     setIsDataLoaded(true);
